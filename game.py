@@ -7,6 +7,7 @@ TILE, COLS, ROWS = 32, 20, 14
 WIDTH, HEIGHT = COLS * TILE, ROWS * TILE + 36
 DIRS = {pygame.K_UP: (-1, 0), pygame.K_DOWN: (1, 0), pygame.K_LEFT: (0, -1), pygame.K_RIGHT: (0, 1)}
 MOVE_DELAY, ENEMY_DELAY, PUMP_RANGE, DEFLATE_AFTER = 0.11, 0.35, 3, 1.5
+POP_PARTICLES = []
 
 
 def dirt_color(row):
@@ -21,8 +22,16 @@ def dirt_color(row):
 
 
 def on_enemy_popped(enemy, score):
-    """Called when an enemy is popped; add particles, bonus points, or a colour flash here."""
-    pass
+    """Create a small particle burst where the enemy was popped."""
+    x = enemy.cell[1] * TILE + TILE // 2
+    y = enemy.cell[0] * TILE + TILE // 2
+
+    for _ in range(8):
+        POP_PARTICLES.append([
+            x + random.randint(-6, 6),
+            y + random.randint(-6, 6),
+            0.4
+        ])
 
 
 def enemy_speed_multiplier(level):
@@ -164,6 +173,10 @@ class Game:
         if self.state != "play":
             return
         self.time += dt
+        for particle in POP_PARTICLES:
+            particle[2] -= dt
+
+        POP_PARTICLES[:] = [p for p in POP_PARTICLES if p[2] > 0]
         self.move_timer -= dt
         if self.move_timer <= 0:
             for key, direction in DIRS.items():
@@ -198,6 +211,9 @@ class Game:
             pygame.draw.circle(screen, color, (x, y), radius)
             pygame.draw.circle(screen, (255, 255, 255), (x - 4, y - 3), 3)
             pygame.draw.circle(screen, (255, 255, 255), (x + 4, y - 3), 3)
+        for x, y, lifetime in POP_PARTICLES:
+            pygame.draw.circle(screen, (255, 220, 80), (x, y), 3)
+
         px, py = self.player[1] * TILE + TILE // 2, self.player[0] * TILE + TILE // 2
         pygame.draw.circle(screen, (250, 250, 250), (px, py), 12)
         pygame.draw.rect(screen, (60, 120, 230), (px - 8, py - 12, 16, 8))
